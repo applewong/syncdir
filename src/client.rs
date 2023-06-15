@@ -1,7 +1,7 @@
 use core::panic;
 use std::net::TcpStream;
 use std::process::Command;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use crate::common::*;
 use crate::fileinfo::*;
@@ -17,7 +17,7 @@ fn do_request(
     Ok(response)
 }
 
-pub fn client_main(
+pub async fn client_main(
     server: &str,
     dir: &str,
     auth_key: &str,
@@ -66,8 +66,9 @@ pub fn client_main(
                         let mut bak_path = exe_path.clone();
                         bak_path.set_file_name(format!("{}.{}.bak", self_name, current_time));
                         std::fs::rename(&exe_path, &bak_path)?;
-                        write_compressed_file(exe_path.as_path(), content.as_slice())?;
-                        std::thread::sleep(Duration::from_secs(1));
+                        write_compressed_file(exe_path.as_path(), content.as_slice()).await?;
+
+                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
                         let mut cmd = Command::new(exe_path);
                         cmd.arg("sync").arg("-s").arg(server).arg("-d").arg(dir);
@@ -138,7 +139,12 @@ pub fn client_main(
                             }
                             let p = file_info.path.parent().unwrap();
                             std::fs::create_dir_all(p).unwrap();
-                            write_compressed_file(&file_info.path, content.as_slice())?;
+                            match write_compressed_file(&file_info.path, content.as_slice()).await {
+                                Err(err) => {
+                                    panic!("{:?}", err);
+                                }
+                                Ok(_) => {}
+                            }
                         }
                         _ => {}
                     }

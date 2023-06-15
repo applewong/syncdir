@@ -44,7 +44,8 @@ pub enum Commands {
     },
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Cli::parse();
 
     match cli.command {
@@ -54,13 +55,17 @@ fn main() {
             auth_key,
             dry_run,
             verbose,
-        }) => client_main(&server, &dir, &auth_key, dry_run, verbose).unwrap(),
+        }) => {
+            client_main(&server, &dir, &auth_key, dry_run, verbose)
+                .await
+                .unwrap();
+        }
         Some(Commands::Server {
             listen,
             dir,
             auth_key,
         }) => {
-            server_main(&listen, &dir, &auth_key).unwrap();
+            server_main(&listen, &dir, &auth_key).await.unwrap();
         }
         None => {
             println!("no command");

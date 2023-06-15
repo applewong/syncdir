@@ -2,10 +2,12 @@ use crate::fileinfo;
 use flate2::read;
 use flate2::write;
 use flate2::Compression;
-use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use std::sync::Arc;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
 
 pub fn compress_bytes(input: &[u8]) -> Vec<u8> {
     let mut encoder = write::DeflateEncoder::new(Vec::new(), Compression::default());
@@ -56,22 +58,24 @@ pub fn human_size(bytes_size: u64) -> String {
     }
 }
 
-pub fn read_file_as_compressed(file_path: &std::path::Path) -> Result<Vec<u8>, std::io::Error> {
-    let mut f = File::open(file_path)?;
+pub async fn read_file_as_compressed(
+    file_path: &std::path::Path,
+) -> Result<Vec<u8>, std::io::Error> {
+    let mut f = File::open(file_path).await?;
     let mut buf = Vec::new();
-    f.read_to_end(&mut buf)?;
+    f.read_to_end(&mut buf).await?;
     buf = compress_bytes(&buf);
     drop(f);
     Ok(buf)
 }
 
-pub fn write_compressed_file(
+pub async fn write_compressed_file(
     file_path: &std::path::Path,
     buf: &[u8],
 ) -> Result<(), std::io::Error> {
-    let mut f = File::create(file_path)?;
+    let mut f = File::create(file_path).await?;
     let decmpressed = decompress_bytes(buf);
-    f.write_all(decmpressed.as_slice())?;
+    f.write_all(decmpressed.as_slice()).await?;
     Ok(())
 }
 
@@ -144,26 +148,33 @@ impl Frame {
         }
     }
 
-    pub fn read_from(reader: &mut impl Read) -> Result<Self, std::io::Error> {
-        let mut buf = [0u8; 4];
-        reader.read_exact(&mut buf)?;
-        let len: u32 = u32::from_be_bytes(buf);
+    pub async fn read_from<'a>(
+        reader: &mut tokio::net::tcp::ReadHalf<'a>,
+    ) -> Result<Self, std::io::Error> {
+        let mut len: [u8; 4] = [0; 4];
+        // let len: u32 = reader.read_u32_le().await?;
+        reader.read_exact(&mut len).await?;
+        let len = u32::from_le_bytes(len);
         let mut frame = Frame {
             len,
             data: vec![0u8; len as usize],
         };
-        reader.read_exact(&mut frame.data)?;
+
+        reader.read_exact(&mut frame.data).await?;
         Ok(frame)
     }
 
-    pub fn write_to(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
-        let len = self.len.to_le_bytes();
-        writer.write_all(&len)?;
-        writer.write_all(self.data.as_slice())?;
+    pub async fn write_to<'a>(
+        &self,
+        writer: &mut tokio::net::tcp::WriteHalf<'a>,
+    ) -> Result<(), std::io::Error> {
+        // self.len.to_le_bytes();
+        writer.write_u32_le(self.len).await?;
+        writer.write_all(self.data.as_slice()).await?;
         Ok(())
     }
 
-    pub fn read(reader: &mut impl Read) -> Result<Self, std::io::Error> {
+    pub fn read(reader: &mut dyn std::io::Read) -> Result<Self, std::io::Error> {
         let mut len: [u8; 4] = [0; 4];
         reader.read_exact(&mut len)?;
         let len = u32::from_le_bytes(len);
