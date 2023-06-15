@@ -1,0 +1,16 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(Windows) Launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/dirsync.exe",
+            "args": ["sync", "-s", "192.168.3.199:9022", "-d", "f:/b", "--dry-run"],
+            "cwd": "${workspaceRoot}"
+        }
+    ],
+}
