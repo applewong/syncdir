@@ -3,7 +3,7 @@
 Dirsync is a command-line tool written in Rust for syncing directories between a client and a server, which contains client and server functions in the binary simultaneously.
 This tool is for rust study. There are three branches with different implementations, but they share the same command-line usage.
 
-- tcpstream-bincode
+- main (tcpstream-bincode)
   
   use `std::net::TcpStream` and depends on `bincode` crate which is used to serialize and deserialize rust structs. The release binary size is 647KB which is the smallest of the three branches.
 - tokio-async-bincode
@@ -15,7 +15,7 @@ This tool is for rust study. There are three branches with different implementat
 
 ## build
 
-optional: `git checkout tcpstream-bincode` or `git checkout tokio-async-bincode` or `git checkout tokio-http`
+optional: `git checkout main` or `git checkout tokio-async-bincode` or `git checkout tokio-http`
 
 `cargo build --release`
 
