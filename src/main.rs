@@ -5,7 +5,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-pub struct Cli {
+struct Cli {
     /// Turn debugging information on
     #[arg(short, long, action = clap::ArgAction::Count)]
     debug: u8,
@@ -15,16 +15,13 @@ pub struct Cli {
 }
 
 #[derive(Subcommand)]
-pub enum Commands {
+enum Commands {
     Sync {
         #[arg(short, long, value_name = "SERVER")]
         server: String,
 
         #[arg(short, long, default_value_t = String::from("."), value_name = "DIR")]
         dir: String,
-
-        #[arg(long, default_value_t = String::from("friday"), value_name = "AUTH_KEY")]
-        auth_key: String,
 
         #[arg(long, default_value_t = false, value_name = "DRY RUN")]
         dry_run: bool,
@@ -38,9 +35,6 @@ pub enum Commands {
 
         #[arg(short, long, default_value_t = String::from("."), value_name = "DIR")]
         dir: String,
-
-        #[arg(long, default_value_t = String::from("friday"), value_name = "AUTH_KEY")]
-        auth_key: String,
     },
 }
 
@@ -52,20 +46,15 @@ async fn main() {
         Some(Commands::Sync {
             server,
             dir,
-            auth_key,
             dry_run,
             verbose,
         }) => {
-            client_main(&server, &dir, &auth_key, dry_run, verbose)
+            client_main(server.as_str(), dir.as_str(), dry_run, verbose)
                 .await
                 .unwrap();
         }
-        Some(Commands::Server {
-            listen,
-            dir,
-            auth_key,
-        }) => {
-            server_main(&listen, &dir, &auth_key).await.unwrap();
+        Some(Commands::Server { listen, dir }) => {
+            server_main(listen.as_str(), dir.as_str()).await.unwrap();
         }
         None => {
             println!("no command");

@@ -6,19 +6,20 @@ use std::io::{BufReader, Read};
 use std::os::windows::prelude::MetadataExt;
 
 use serde::{Deserialize, Serialize};
+// use serde_json;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FileInfo {
     #[serde(skip)]
     pub path: std::path::PathBuf,
     pub path_hash: String,
     pub name: String,
     pub size: u64,
-    pub last_modified: u64,
+    pub modified: u64,
     pub hash: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DirInfo {
     pub path: std::path::PathBuf,
     pub files: Vec<FileInfo>,
@@ -67,10 +68,7 @@ impl DirInfo {
 impl FileInfo {
     pub fn new(path: &std::path::PathBuf) -> Result<Self, std::io::Error> {
         let p = std::path::Path::new(path);
-        if !p.exists() {
-            return Err(std::io::ErrorKind::NotFound.into());
-        }
-        // assert!(p.exists() && p.is_file());
+        assert!(p.exists() && p.is_file());
         let meta = fs::metadata(p)?;
         let file_size = meta.file_size();
         let last_write_time = meta.last_write_time();
@@ -95,7 +93,7 @@ impl FileInfo {
             path_hash: "".to_string(),
             name: p.file_name().unwrap().to_str().unwrap().to_string(),
             size: file_size,
-            last_modified: last_write_time,
+            modified: last_write_time,
             hash,
         })
     }
